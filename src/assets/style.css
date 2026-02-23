@@ -1,13 +1,20 @@
+/* Import Mirotone for consistent Miro styling */
 @import 'mirotone/dist/styles.css';
 
+/* Reset */
 *,
 *:before,
 *:after {
   box-sizing: border-box;
 }
 
+/* Body */
 body {
   display: flex;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background-color: var(--color-bg-primary);
 }
 
 #root {
@@ -19,4 +26,242 @@ body {
 img {
   max-width: 100%;
   height: auto;
+}
+
+/* Main wrapper */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+/* Header */
+.header {
+  text-align: left;
+}
+
+.header h2 {
+  margin: 0 0 var(--space-xsmall) 0;
+  font-size: var(--font-size-xlarge);
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+h2 {
+  margin: 0;
+  font-size: var(--font-size-large);
+}
+
+.description {
+  margin: 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* Button groups */
+.button-group {
+  display: flex;
+  gap: var(--space-small);
+  flex-wrap: wrap;
+}
+
+/* Large primary button */
+.button-large {
+  width: 100%;
+  padding: var(--space-small) var(--space-medium);
+  font-size: var(--font-size-medium);
+}
+
+/* Options section */
+.options-section {
+  padding: var(--space-small) 0;
+}
+
+/* Checkbox styling */
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xsmall);
+  font-size: var(--font-size-small);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.checkbox input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* JSON input textarea */
+.json-input {
+  width: 100%;
+  min-height: 180px;
+  padding: var(--space-small);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius-medium);
+  font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.4;
+  resize: vertical;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+}
+
+.json-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+}
+
+.json-input:disabled {
+  background-color: var(--color-bg-disabled);
+  cursor: not-allowed;
+}
+
+.json-input::placeholder {
+  color: var(--color-text-disabled);
+}
+
+/* Preview info box */
+.preview-info {
+  padding: var(--space-small);
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-medium);
+  font-size: var(--font-size-small);
+}
+
+.preview-info strong {
+  display: block;
+  margin-bottom: var(--space-xsmall);
+  color: var(--color-text-primary);
+}
+
+.preview-info ul {
+  margin: 0;
+  padding-left: var(--space-medium);
+  color: var(--color-text-secondary);
+}
+
+.preview-info li {
+  margin-bottom: 2px;
+}
+
+/* Progress bar */
+.progress-container {
+  position: relative;
+  width: 100%;
+  height: 24px;
+  background-color: var(--color-bg-secondary);
+  border-radius: var(--border-radius-medium);
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background-color: var(--color-primary);
+  transition: width 0.2s ease;
+}
+
+.progress-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+/* Status messages */
+.status {
+  padding: var(--space-small);
+  border-radius: var(--border-radius-medium);
+  font-size: var(--font-size-small);
+  margin: 0;
+  text-align: center;
+}
+
+.status-info {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-secondary);
+}
+
+.status-success {
+  background-color: var(--color-bg-success);
+  color: var(--color-text-success);
+}
+
+.status-error {
+  background-color: var(--color-bg-danger);
+  color: var(--color-text-danger);
+}
+
+/* Error details accordion */
+.error-details {
+  font-size: var(--font-size-small);
+  background-color: var(--color-bg-secondary);
+  padding: var(--space-small);
+  border-radius: var(--border-radius-medium);
+  border: 1px solid var(--color-border);
+}
+
+.error-details summary {
+  cursor: pointer;
+  color: var(--color-text-danger);
+  font-weight: 500;
+  user-select: none;
+}
+
+.error-details summary:hover {
+  text-decoration: underline;
+}
+
+.error-details ul {
+  margin: var(--space-small) 0 0 0;
+  padding-left: var(--space-medium);
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.error-details li {
+  margin-bottom: var(--space-xsmall);
+  word-break: break-word;
+  color: var(--color-text-secondary);
+}
+
+.error-details code {
+  background-color: var(--color-bg-primary);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: 'SF Mono', Monaco, monospace;
+  font-size: 11px;
+}
+
+/* Footer */
+.footer {
+  margin-top: var(--space-small);
+  padding-top: var(--space-small);
+  border-top: 1px solid var(--color-border);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--font-size-xsmall);
+  color: var(--color-text-disabled);
+  line-height: 1.4;
+}
+
+/* Links */
+.link {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
 }
