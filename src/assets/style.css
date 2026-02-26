@@ -1,6 +1,11 @@
 /* Import Mirotone for consistent Miro styling */
 @import 'mirotone/dist/styles.css';
 
+/* Accent color override */
+:root {
+  --color-primary: #2196f3;
+}
+
 /* Reset */
 *,
 *:before,
@@ -61,11 +66,77 @@ h2 {
   line-height: 1.4;
 }
 
+/* Drop zone — dashed border always visible, faint by default, full on hover/drag */
+.drop-zone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 120px;
+  padding: var(--space-medium);
+  border: 2px dashed rgba(33, 150, 243, 0.4);
+  border-radius: var(--border-radius-medium);
+  background-color: var(--color-bg-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.drop-zone:hover {
+  border: 2px dashed #2196f3;
+  background-color: var(--color-bg-primary);
+}
+
+.drop-zone--active {
+  border: 2px dashed #2196f3;
+  background-color: rgba(33, 150, 243, 0.08);
+}
+
+.drop-zone:focus {
+  outline: none;
+  border: 2px dashed #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+}
+
+.drop-zone--disabled {
+  pointer-events: none;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.drop-zone__text {
+  margin: 0;
+  font-size: var(--font-size-medium);
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-align: center;
+}
+
+.drop-zone__hint {
+  margin: var(--space-xsmall) 0 0 0;
+  font-size: var(--font-size-small);
+  color: var(--color-text-secondary);
+}
+
 /* Button groups */
 .button-group {
   display: flex;
   gap: var(--space-small);
   flex-wrap: wrap;
+}
+
+/* Primary button — accent color */
+.button.button-primary {
+  background-color: #2196f3;
+  border-color: #2196f3;
+}
+
+.button.button-primary:hover:not(:disabled) {
+  background-color: #1976d2;
+  border-color: #1976d2;
+}
+
+.button.button-primary:focus {
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.4);
 }
 
 /* Large primary button */
@@ -95,6 +166,7 @@ h2 {
   width: 16px;
   height: 16px;
   cursor: pointer;
+  accent-color: #2196f3;
 }
 
 /* JSON input textarea */
@@ -115,7 +187,7 @@ h2 {
 .json-input:focus {
   outline: none;
   border-color: var(--color-primary);
-  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.2);
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
 }
 
 .json-input:disabled {

@@ -13,7 +13,6 @@ const DEFAULT_OPTIONS: ImportOptions = {
 
 const App: React.FC = () => {
   // State
-  const [jsonInput, setJsonInput] = useState('');
   // parsedChunks holds one entry per uploaded file (sorted by chunkIndex).
   // Single-file uploads produce a one-element array; multi-chunk exports produce N entries.
   const [parsedChunks, setParsedChunks] = useState<Array<{ payload: DeepCopyPayload; zip: JSZip | null }>>([]);
@@ -23,6 +22,7 @@ const App: React.FC = () => {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [options, setOptions] = useState<ImportOptions>(DEFAULT_OPTIONS);
   const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
+  const [isDragOver, setIsDragOver] = useState(false);
 
   /**
    * Check if a single element has the required fields.
@@ -207,12 +207,11 @@ const App: React.FC = () => {
   }, [decompressGzip]);
 
   /**
-   * Handle file selection — supports single or multiple files (chunked exports).
+   * Process selected or dropped files — supports single or multiple files (chunked exports).
    * Each file is parsed independently then sorted by chunkIndex before storing.
    */
-  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
+  const processFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
 
     const fileCount = files.length;
     setStatus(`Loading ${fileCount} file${fileCount > 1 ? 's' : ''}...`);
@@ -239,7 +238,6 @@ const App: React.FC = () => {
         setStatus('Error processing file. Please check the file content.');
       }
       setStatusType('error');
-      event.target.value = '';
       return;
     }
 
@@ -247,7 +245,6 @@ const App: React.FC = () => {
     newChunks.sort((a, b) => (a.payload.chunkIndex ?? 0) - (b.payload.chunkIndex ?? 0));
 
     setParsedChunks(newChunks);
-    setJsonInput('');
 
     const totalElements = newChunks.reduce((sum, c) => sum + c.payload.elements.length, 0);
     if (newChunks.length === 1) {
@@ -261,18 +258,50 @@ const App: React.FC = () => {
       setStatus(`Loaded ${newChunks.length} files — ${totalElements} elements total${mismatchMsg}. Ready to import.`);
     }
     setStatusType('success');
-
-    // Reset so the same file(s) can be re-selected if needed.
-    event.target.value = '';
   }, [parseFile]);
 
   /**
+   * Handle file input change — delegates to processFiles.
+   */
+  const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+    await processFiles(Array.from(files));
+    event.target.value = '';
+  }, [processFiles]);
+
+  /**
+   * Handle drag and drop on the drop zone.
+   */
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isImporting) setIsDragOver(true);
+  }, [isImporting]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    if (isImporting) return;
+    const files = e.dataTransfer.files;
+    if (!files || files.length === 0) return;
+    processFiles(Array.from(files));
+  }, [isImporting, processFiles]);
+
+  /**
    * Handle the main import action.
-   * Uses parsedChunks when files were uploaded; falls back to jsonInput for clipboard pastes.
+   * Uses parsedChunks from uploaded file(s).
    */
   const handleImport = useCallback(async () => {
-    if (parsedChunks.length === 0 && !jsonInput.trim()) {
-      setStatus('Please choose or upload a JSON file first');
+    if (parsedChunks.length === 0) {
+      setStatus('Please upload a VibeIQ file first');
       setStatusType('error');
       return;
     }
@@ -284,30 +313,7 @@ const App: React.FC = () => {
     setProgress(null);
 
     try {
-      // Resolve chunks to import — file uploads use parsedChunks, clipboard paste uses jsonInput.
-      let chunksToImport: Array<{ payload: DeepCopyPayload; zip: JSZip | null }>;
-
-      if (parsedChunks.length > 0) {
-        chunksToImport = parsedChunks;
-      } else {
-        let payload: DeepCopyPayload;
-        try {
-          payload = JSON.parse(jsonInput);
-        } catch (parseError) {
-          if (
-            parseError instanceof RangeError ||
-            (parseError instanceof Error && parseError.message.includes('Invalid string length'))
-          ) {
-            throw new Error('File is too large for this browser to import. Try selecting fewer elements in VibeIQ and export again.');
-          }
-          throw new Error('Invalid JSON format. Please check the file content.');
-        }
-        const cleaned = validateAndCleanPayload(payload);
-        if (!cleaned) {
-          throw new Error('Invalid payload structure. Expected VibeIQ deep copy format with "vibeiq-board" source and elements array. Check browser console for details.');
-        }
-        chunksToImport = [{ payload: cleaned, zip: null }];
-      }
+      const chunksToImport = parsedChunks;
 
       // Collect all elements across every chunk for bounding-box calculation.
       const allElements: DeepCopyElement[] = chunksToImport.flatMap((c) => c.payload.elements);
@@ -390,7 +396,6 @@ const App: React.FC = () => {
       if (result.failed === 0) {
         setStatus(`Successfully imported ${result.created} elements`);
         setStatusType('success');
-        setJsonInput('');
         setParsedChunks([]);
       } else if (result.created > 0) {
         setStatus(`Partially imported: ${result.created} succeeded, ${result.failed} failed`);
@@ -407,13 +412,12 @@ const App: React.FC = () => {
     } finally {
       setIsImporting(false);
     }
-  }, [jsonInput, parsedChunks, options]);
+  }, [parsedChunks, options]);
 
   /**
    * Clear all state.
    */
   const handleClear = useCallback(() => {
-    setJsonInput('');
     setParsedChunks([]);
     setStatus('');
     setStatusType('info');
@@ -422,23 +426,11 @@ const App: React.FC = () => {
   }, []);
 
   /**
-   * Calculate preview info from current JSON or parsed chunks.
+   * Calculate preview info from parsed chunks.
    */
   const previewInfo = useMemo(() => {
-    let allElements: DeepCopyElement[] = [];
-
-    if (parsedChunks.length > 0) {
-      allElements = parsedChunks.flatMap((c) => c.payload.elements);
-    } else if (jsonInput.trim()) {
-      try {
-        const parsed = JSON.parse(jsonInput);
-        const cleaned = validateAndCleanPayload(parsed);
-        if (cleaned) allElements = cleaned.elements;
-      } catch {
-        // Invalid JSON, no preview
-      }
-    }
-
+    if (parsedChunks.length === 0) return null;
+    const allElements = parsedChunks.flatMap((c) => c.payload.elements);
     if (allElements.length === 0) return null;
 
     const typeCounts = allElements.reduce((acc, el) => {
@@ -451,29 +443,47 @@ const App: React.FC = () => {
       types: typeCounts,
       chunkCount: parsedChunks.length > 1 ? parsedChunks.length : undefined,
     };
-  }, [jsonInput, parsedChunks]);
+  }, [parsedChunks]);
 
   return (
     <div className="wrapper">
       {/* Header */}
       <header className="header">
         <h2>VibeIQ Import</h2>
-        <p className="description">
-          Export elements in VibeIQ using "Deep Copy All", then upload the .json file here.
-          <br />
-          <strong>For large exports, VibeIQ will download a single .zip file containing all chunks — upload that file here.</strong>
-        </p>
       </header>
 
-      {/* Actions - Primary: file upload via hidden input triggered by button */}
+      {/* Drop zone — click to choose file or drag and drop */}
+      <input
+        type="file"
+        id="vibeiq-file-upload"
+        accept=".json,.json.gz,.zip,application/json,application/gzip,application/zip"
+        onChange={handleFileSelect}
+        style={{ display: 'none' }}
+      />
+      <div
+        className={`drop-zone ${isDragOver ? 'drop-zone--active' : ''} ${isImporting ? 'drop-zone--disabled' : ''}`}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        onClick={() => !isImporting && document.getElementById('vibeiq-file-upload')?.click()}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !isImporting) {
+            e.preventDefault();
+            document.getElementById('vibeiq-file-upload')?.click();
+          }
+        }}
+        aria-label="Drop your VibeIQ zip file here or click to choose file"
+      >
+        <p className="drop-zone__text">
+          Please drop your VibeIQ generated zip file here!
+        </p>
+        <p className="drop-zone__hint">or click to choose a file</p>
+      </div>
+
+      {/* Actions */}
       <div className="button-group">
-        <input
-          type="file"
-          id="vibeiq-file-upload"
-          accept=".json,.json.gz,.zip,application/json,application/gzip,application/zip"
-          onChange={handleFileSelect}
-          style={{ display: 'none' }}
-        />
         <button
           className="button button-secondary"
           onClick={() => document.getElementById('vibeiq-file-upload')?.click()}
@@ -484,7 +494,7 @@ const App: React.FC = () => {
         <button
           className="button button-secondary"
           onClick={handleClear}
-          disabled={isImporting || (!jsonInput && parsedChunks.length === 0)}
+          disabled={isImporting || parsedChunks.length === 0}
         >
           Clear
         </button>
@@ -504,21 +514,6 @@ const App: React.FC = () => {
           <span>Center elements at current viewport</span>
         </label>
       </div>
-
-      {/* JSON Input — hidden when a file is loaded to avoid rendering large strings
-          in a controlled textarea which can freeze the browser. */}
-      {parsedChunks.length === 0 && (
-        <textarea
-          className="json-input"
-          value={jsonInput}
-          onChange={(e) => setJsonInput(e.target.value)}
-          placeholder='Choose a file or paste JSON from VibeIQ export...
-
-File: vibeiq-export-YYYY-MM-DD.json'
-          disabled={isImporting}
-          spellCheck={false}
-        />
-      )}
 
       {/* Preview Info */}
       {previewInfo && (
@@ -554,7 +549,7 @@ File: vibeiq-export-YYYY-MM-DD.json'
       <button
         className="button button-primary button-large"
         onClick={handleImport}
-        disabled={isImporting || (parsedChunks.length === 0 && !jsonInput.trim())}
+        disabled={isImporting || parsedChunks.length === 0}
       >
         {isImporting ? 'Importing...' : 'Import Elements'}
       </button>
