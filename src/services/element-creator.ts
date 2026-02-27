@@ -143,7 +143,7 @@ export async function createMiroElement(
 
     case 'image':
     case 'item_card':
-      await createImageElement(element, x, y, width, height, zip, undefined, onRateLimited);
+      await createImageElement(element, x, y, width, zip, undefined, onRateLimited);
       break;
 
     case 'shape':
@@ -151,7 +151,7 @@ export async function createMiroElement(
         await createNativeShapeElement(element, x, y, width, height, onRateLimited);
       } else {
         // Legacy: image-based shape (heart, line, arrow, etc.)
-        await createImageElement(element, x, y, width, height, zip, undefined, onRateLimited);
+        await createImageElement(element, x, y, width, zip, undefined, onRateLimited);
       }
       break;
 
@@ -344,7 +344,7 @@ async function createFrameElement(
   width: number,
   height: number,
   onRateLimited?: (retryCount: number, waitTime: number) => void
-): Promise<unknown> {
+): Promise<void> {
   const frameOptions = {
     title: element.title || '',
     x,
@@ -404,7 +404,6 @@ async function createImageElement(
   x: number,
   y: number,
   width: number,
-  height: number,
   zip?: JSZip | null,
   parentId?: string,
   onRateLimited?: (retryCount: number, waitTime: number) => void
@@ -442,10 +441,6 @@ async function createImageElement(
     y,
     width,
   };
-
-  // Explicitly set height so Miro doesn't infer it from the image's intrinsic
-  // pixel dimensions — this preserves the exact VibeIQ element size.
-  (imageOptions as Record<string, unknown>).height = height;
 
   if (element.rotation != null) {
     (imageOptions as Record<string, unknown>).rotation = element.rotation;
