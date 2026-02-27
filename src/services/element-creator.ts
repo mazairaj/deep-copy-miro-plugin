@@ -391,7 +391,8 @@ async function resolveImageRefFromZip(zip: JSZip, imageRef: string): Promise<str
     throw new Error(`Image not found in ZIP: ${imageRef}`);
   }
   const arrayBuffer = await imageFile.async('arraybuffer');
-  const blob = new Blob([arrayBuffer], { type: 'image/png' });
+  const mimeType = imageRef.endsWith('.jpg') || imageRef.endsWith('.jpeg') ? 'image/jpeg' : 'image/png';
+  const blob = new Blob([arrayBuffer], { type: mimeType });
   return await blobToDataUrl(blob);
 }
 
